@@ -20,8 +20,11 @@ def get_student_by_github(github):
         """
     db_cursor.execute(QUERY, (github,))
     row = db_cursor.fetchone()
-    print "Student: %s %s\nGithub account: %s" % (
-        row[0], row[1], row[2])
+    if row == None:
+        print "Student not found. Try again."
+    else:
+        print "Student: %s %s\nGithub account: %s" % (
+            row[0], row[1], row[2])
 
 
 def make_new_student(first_name, last_name, github):
@@ -29,8 +32,21 @@ def make_new_student(first_name, last_name, github):
     Given a first name, last name, and GitHub account, add student to the
     database and print a confirmation message.
     """
-    pass
+    QUERY = """INSERT INTO Students (first_name, last_name, github) 
+            VALUES (?, ?, ?)
+            """
+    db_cursor.execute(QUERY, (first_name, last_name, github))
+    db_connection.commit()
 
+    get_student_by_github(github)
+
+
+def make_new_project(project_title, project_description, max_grade):
+    QUERY = """INSERT INTO Projects (title, description, max_grade) 
+        VALUES (?, ?, ?)
+    """
+    db_cursor.execute(QUERY, (project_title, project_description, max_grade))
+    db_connection.commit()
 
 def get_project_by_title(title):
     """Given a project title, print information about the project."""
@@ -44,7 +60,14 @@ def get_project_by_title(title):
     print "Project: %s - %s and has a maximum grade of %s." % (
         row[0], row[1], row[2])
 
-
+def get_all_grades(student_github):
+    QUERY = """SELECT first_name, last_name, project_title, grade 
+            FROM  Students JOIN Grades
+            ON (grades.student_github = students.github)
+    """
+    db_cursor.execute(QUERY, (student_github, ))
+    results = db_cursor.fetchall()
+    print results
 
 def get_grade_by_github_title(github, title):
     """Print grade student received for a project."""
@@ -70,6 +93,7 @@ def assign_grade(github, title, grade):
     """
     db_cursor.execute(QUERY2, (github, title))
     row = db_cursor.fetchone()
+    db_connection.commit()
     print "Github user %s received a %s on project %s." % (row[0], row[2], row[1])
 
 def handle_input():
@@ -87,12 +111,18 @@ def handle_input():
         args = tokens[1:]
 
         if command == "student":
-            github = args[0]
-            get_student_by_github(github)
+            if len(args) == 1:
+                github = args[0]
+                get_student_by_github(github)
+            else:
+                print "Too many arguments, please provide only github username you are seeking"
 
         elif command == "new_student":
-            first_name, last_name, github = args   # unpack!
-            make_new_student(first_name, last_name, github)
+            if len(args) == 3:
+                first_name, last_name, github = args   # unpack!
+                make_new_student(first_name, last_name, github)
+            else:
+                print "Need all student info - first name, last name and github username."
 
 
 if __name__ == "__main__":
